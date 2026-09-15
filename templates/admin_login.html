@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - ASAA Travel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-slate-900 min-h-screen flex items-center justify-center py-10 px-4">
+
+    <div class="max-w-md w-full bg-white p-8 rounded-xl shadow-2xl">
+        <div class="text-center mb-6">
+            <i class="fa-solid fa-user-shield text-5xl text-yellow-500 mb-2"></i>
+            <h2 class="text-2xl font-bold text-slate-800">Admin Portal Login</h2>
+            <p class="text-gray-500 text-sm">Access application track records and pricing controls</p>
+        </div>
+
+        <form id="adminLoginForm" onsubmit="handleAdminLogin(event)" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Admin Username</label>
+                <input type="text" id="adminUsername" required placeholder="admin" class="mt-1 w-full p-3 border rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Admin Password</label>
+                <input type="password" id="adminPassword" required placeholder="••••••••" class="mt-1 w-full p-3 border rounded-lg focus:ring-2 focus:ring-yellow-500 outline-none">
+            </div>
+
+            <button type="submit" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-bold py-3 rounded-lg transition duration-200">
+                Log In to Admin Dashboard
+            </button>
+        </form>
+
+        <div class="mt-6 text-center text-xs text-gray-500 bg-gray-100 p-3 rounded">
+            <strong>Default Credentials:</strong><br>
+            Username: <span class="font-mono text-blue-600">admin</span> | Password: <span class="font-mono text-blue-600">adminpassword123</span>
+        </div>
+    </div>
+
+    <script>
+        function handleAdminLogin(e) {
+            e.preventDefault();
+            const username = document.getElementById('adminUsername').value;
+            const password = document.getElementById('adminPassword').value;
+
+            fetch('/api/auth/admin-login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    localStorage.setItem('asaa_admin_token', 'logged_in');
+                    alert("Admin authentication successful!");
+                    window.location.href = "/admin";
+                } else {
+                    alert("Error: " + data.error);
+                }
+            });
+        }
+    </script>
+</body>
+</html>

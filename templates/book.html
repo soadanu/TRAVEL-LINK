@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ticket Application - ASAA Travel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://checkout.flutterwave.com/v3.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen py-10 px-4">
+
+    <div class="max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-md">
+        <a href="/" class="text-blue-600 text-sm hover:underline mb-6 inline-block">&larr; Back to Selection</a>
+        
+        <h2 class="text-2xl font-bold mb-2 text-gray-800">Apply For Travel Ticket</h2>
+        <p class="text-gray-500 text-sm mb-6">Fill in your destination. Your record will be tracked in the Admin Dashboard.</p>
+
+        <form id="applicationForm" class="space-y-4">
+            <input type="hidden" id="transportType" value="{{.Type}}">
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Applicant Full Name</label>
+                <input type="text" id="fullName" readonly class="mt-1 w-full p-3 border bg-gray-100 rounded-lg outline-none">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Email Address</label>
+                <input type="email" id="email" readonly class="mt-1 w-full p-3 border bg-gray-100 rounded-lg outline-none">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Phone Number</label>
+                <input type="tel" id="phone" readonly class="mt-1 w-full p-3 border bg-gray-100 rounded-lg outline-none">
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium text-gray-700">Traveling Destination (Where are you going?)</label>
+                <input type="text" id="destination" onchange="checkPrice()" placeholder="e.g. Lagos, Abuja, Calabar, Port Harcourt" required class="mt-1 w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Travel Date</label>
+                    <input type="date" id="travelDate" required class="mt-1 w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Departure Time</label>
+                    <select id="departureTime" required class="mt-1 w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                        <option value="">Select Time</option>
+                        <option value="07:00 AM">07:00 AM (Morning)</option>
+                        <option value="12:00 PM">12:00 PM (Afternoon)</option>
+                        <option value="05:30 PM">05:30 PM (Evening)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Dynamic Price Banner -->
+            <div id="priceBanner" class="p-4 rounded-lg bg-gray-50 border border-gray-200 my-4 text-center">
+                <span class="text-gray-600 text-sm">Destination Price Tag: </span>
+                <span id="priceDisplay" class="font-bold text-xl text-blue-600">Enter Destination</span>
+            </div>
+
+            <div class="border-t pt-4 mt-6">
+                <button type="button" id="submitBtn" onclick="handleApplicationSubmit()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition duration-200">
+                    Submit Application To Admin
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <script>
+        const loggedUser = JSON.parse(localStorage.getItem('asaa_customer_user'));
+        if(!loggedUser) {
+            alert("Customer session expired. Please log in first.");
+            window.location.href = "/login";
+        } else {
+            document.getElementById('fullName').value = loggedUser.name;
+            document.getElementById('email').value = loggedUser.email;
+            document.getElementById('phone').value = loggedUser.phone || '+2348000000000';
+        }
+
+        let currentPrice = 0;
+        let priceSetByAdmin = false;
+
+        function checkPrice() {
+            const dest = document.getElementById('destination').value.trim();
+            const transportType = document.getElementById('transportType').value;
+
+            if (!dest) return;
+
+            fetch(`/api/get-price?destination=${encodeURIComponent(dest)}&type=${transportType}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status === 'available') {
+                        currentPrice = data.price;
+                        priceSetByAdmin = true;
+                        document.getElementById('priceDisplay').innerText = `USD ${currentPrice.toFixed(2)}`;
+                        document.getElementById('submitBtn').innerText = `Pay USD ${currentPrice.toFixed(2)} & Submit Application`;
+                        document.getElementById('submitBtn').className = "w-full bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-3 rounded-lg transition duration-200";
+                    } else {
+                        currentPrice = 0;
+                        priceSetByAdmin = false;
+                        document.getElementById('priceDisplay').innerText = "Pending Admin Fare Quote";
+                        document.getElementById('submitBtn').innerText = "Submit Application to Admin for Price Tag";
+                        document.getElementById('submitBtn').className = "w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition duration-200";
+                    }
+                });
+        }
+
+        function handleApplicationSubmit() {
+            const dest = document.getElementById('destination').value.trim();
+            const date = document.getElementById('travelDate').value;
+            const time = document.getElementById('departureTime').value;
+            const transportType = document.getElementById('transportType').value;
+
+            if (!dest || !date || !time) {
+                alert("Please complete all application fields.");
+                return;
+            }
+
+            fetch('/api/submit-application', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_name: loggedUser.name,
+                    user_email: loggedUser.email,
+                    phone: loggedUser.phone,
+                    destination: dest,
+                    transport_type: transportType,
+                    date: date,
+                    time: time
+                })
+            })
+            .then(res => res.json())
+            .then(res => {
+                if (priceSetByAdmin && currentPrice > 0) {
+                    payWithFlutterwave(res.application_id, loggedUser.name, loggedUser.email, loggedUser.phone, dest, date, time, transportType, currentPrice);
+                } else {
+                    alert(`Application #${res.application_id} submitted to Admin Dashboard! Admin will review the destination track record and set the fare.`);
+                    window.location.href = "/";
+                }
+            });
+        }
+
+        function payWithFlutterwave(appId, name, email, phone, dest, date, time, transportType, amount) {
+            const txRef = "ASAA-APP-" + appId + "-" + Date.now();
+
+            FlutterwaveCheckout({
+                public_key: "FLWPUBK_TEST-YOUR_PUBLIC_KEY_HERE-X",
+                tx_ref: txRef,
+                amount: amount,
+                currency: "USD",
+                payment_options: "card, mobilemoney, ussd",
+                customer: {
+                    email: email,
+                    phone_number: phone,
+                    name: name,
+                },
+                customizations: {
+                    title: "ASAA Travel Ticket Application",
+                    description: `Application #${appId} to ${dest}`,
+                    logo: "https://cdn-icons-png.flaticon.com/512/201/201623.png",
+                },
+                callback: function (data) {
+                    fetch('/api/confirm-booking', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            application_id: appId,
+                            transaction_id: data.transaction_id,
+                            tx_ref: data.tx_ref,
+                            amount: amount
+                        })
+                    })
+                    .then(res => res.json())
+                    .then(response => {
+                        alert("Application payment successful! Seat number (" + response.seat_number + ") assigned and confirmation email sent.");
+                        window.location.href = "/";
+                    });
+                }
+            });
+        }
+    </script>
+</body>
+</html>

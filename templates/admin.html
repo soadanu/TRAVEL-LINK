@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASAA Travel - Admin Control & Track Records</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans min-h-screen">
+
+    <!-- Admin Header -->
+    <header class="bg-slate-900 text-white py-4 px-8 flex justify-between items-center shadow-lg">
+        <div class="text-xl font-bold flex items-center gap-2">
+            <i class="fa-solid fa-sliders text-yellow-500"></i> ASAA Travel Admin Control Panel
+        </div>
+        <div class="flex items-center gap-4">
+            <a href="/" class="text-gray-300 hover:text-white text-sm flex items-center gap-1">
+                <i class="fa-solid fa-globe"></i> Main Website
+            </a>
+            <button onclick="adminLogout()" class="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1.5 rounded font-semibold transition">
+                Admin Logout
+            </button>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto py-10 px-4 space-y-10">
+        
+        <!-- Section 1: User Application Track Records -->
+        <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-clipboard-list text-blue-600"></i> User Ticket Applications & Track Records
+                    </h2>
+                    <p class="text-sm text-gray-500">Real-time tracking of every user applying for a ticket across all locations.</p>
+                </div>
+                <button onclick="loadAdminApplications()" class="bg-blue-100 text-blue-700 text-xs px-3 py-1.5 rounded-lg hover:bg-blue-200 transition font-semibold">
+                    <i class="fa-solid fa-rotate"></i> Refresh Records
+                </button>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-100 text-slate-700 text-xs uppercase font-semibold">
+                            <th class="p-3">App ID</th>
+                            <th class="p-3">Applicant Name</th>
+                            <th class="p-3">Email & Phone</th>
+                            <th class="p-3">Destination</th>
+                            <th class="p-3">Transport</th>
+                            <th class="p-3">Travel Date/Time</th>
+                            <th class="p-3">Applied At</th>
+                            <th class="p-3">Status / Seat</th>
+                            <th class="p-3">Admin Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminAppList" class="divide-y text-sm">
+                        <!-- Application track record rows -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Section 2: Destination Price Tags Management -->
+        <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+            <h2 class="text-xl font-bold mb-2 text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-tags text-blue-600"></i> Manage Location Price Tags
+            </h2>
+            <p class="text-sm text-gray-500 mb-6">Pre-configure fixed fare price tags for standard destinations.</p>
+
+            <form id="priceRuleForm" onsubmit="addPricingRule(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Destination</label>
+                    <input type="text" id="ruleDest" placeholder="e.g. Lagos, Port Harcourt" required class="w-full p-2.5 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Transport Mode</label>
+                    <select id="ruleType" required class="w-full p-2.5 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="Air">Air</option>
+                        <option value="Road">Road</option>
+                        <option value="Sea">Sea</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Price Tag (USD)</label>
+                    <input type="number" step="0.01" id="rulePrice" placeholder="120.00" required class="w-full p-2.5 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="flex items-end">
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition">
+                        Set Location Price Tag
+                    </button>
+                </div>
+            </form>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-100 text-slate-700 text-xs uppercase font-semibold">
+                            <th class="p-3">Destination & Mode</th>
+                            <th class="p-3">Current Price Tag</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pricingRulesList" class="divide-y text-sm">
+                        <!-- Dynamic pricing rows -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Protect Admin Page
+        if(localStorage.getItem('asaa_admin_token') !== 'logged_in') {
+            alert("Admin authentication required.");
+            window.location.href = "/admin-login";
+        }
+
+        function adminLogout() {
+            localStorage.removeItem('asaa_admin_token');
+            window.location.href = "/admin-login";
+        }
+
+        function loadAdminApplications() {
+            fetch('/api/admin/applications')
+                .then(res => res.json())
+                .then(apps => {
+                    const tbody = document.getElementById('adminAppList');
+                    tbody.innerHTML = '';
+                    if(!apps || apps.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="9" class="p-4 text-center text-gray-400">No user applications logged yet.</td></tr>`;
+                        return;
+                    }
+                    apps.forEach(app => {
+                        let statusColor = 'bg-yellow-100 text-yellow-800';
+                        if(app.status.includes('Paid')) statusColor = 'bg-green-100 text-green-800';
+                        else if(app.status.includes('Quoted')) statusColor = 'bg-blue-100 text-blue-800';
+
+                        tbody.innerHTML += `
+                            <tr class="hover:bg-gray-50">
+                                <td class="p-3 font-mono font-bold text-xs">#${app.id}</td>
+                                <td class="p-3 font-semibold text-gray-900">${app.user_name}</td>
+                                <td class="p-3 text-xs text-gray-600">${app.user_email}<br>${app.phone}</td>
+                                <td class="p-3 font-bold text-blue-700">${app.destination}</td>
+                                <td class="p-3 uppercase text-xs font-bold">${app.transport_type}</td>
+                                <td class="p-3 text-xs">${app.date} (${app.time})</td>
+                                <td class="p-3 text-xs text-gray-400">${app.applied_at}</td>
+                                <td class="p-3">
+                                    <span class="px-2.5 py-1 rounded-full text-xs font-bold ${statusColor}">
+                                        ${app.status}
+                                    </span>
+                                    ${app.seat_number ? `<br><span class="text-xs font-mono font-bold text-emerald-600">${app.seat_number}</span>` : ''}
+                                </td>
+                                <td class="p-3">
+                                    <div class="flex items-center gap-2">
+                                        <input type="number" id="quote_${app.id}" placeholder="Quote $" class="w-20 p-1 border rounded text-xs outline-none">
+                                        <button onclick="quotePrice(${app.id})" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1 rounded font-semibold transition">
+                                            Quote Fare
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                });
+        }
+
+        function loadPricingRules() {
+            fetch('/api/admin/pricing')
+                .then(res => res.json())
+                .then(rules => {
+                    const tbody = document.getElementById('pricingRulesList');
+                    tbody.innerHTML = '';
+                    for (const [key, price] of Object.entries(rules)) {
+                        tbody.innerHTML += `
+                            <tr class="hover:bg-gray-50">
+                                <td class="p-3 font-semibold text-gray-800">${key}</td>
+                                <td class="p-3 text-blue-600 font-bold">USD $${price.toFixed(2)}</td>
+                            </tr>
+                        `;
+                    }
+                });
+        }
+
+        function addPricingRule(e) {
+            e.preventDefault();
+            const dest = document.getElementById('ruleDest').value;
+            const type = document.getElementById('ruleType').value;
+            const price = parseFloat(document.getElementById('rulePrice').value);
+
+            fetch('/api/admin/pricing', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ destination: dest, transport_type: type, price: price })
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert("Location price tag set successfully!");
+                document.getElementById('priceRuleForm').reset();
+                loadPricingRules();
+            });
+        }
+
+        function quotePrice(appId) {
+            const input = document.getElementById(`quote_${appId}`);
+            const price = parseFloat(input.value);
+            if (!price || price <= 0) {
+                alert("Please enter a valid price amount.");
+                return;
+            }
+
+            fetch('/api/admin/quote-price', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ id: appId, price: price })
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert("Fare quoted for ticket application #" + appId);
+                loadAdminApplications();
+            });
+        }
+
+        // Initial Load
+        loadAdminApplications();
+        loadPricingRules();
+        setInterval(loadAdminApplications, 5000);
+    </script>
+</body>
+</html>

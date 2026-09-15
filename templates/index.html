@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASAA Travel - Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans">
+
+    <!-- Navigation -->
+    <nav class="bg-white shadow-md py-4 px-8 flex justify-between items-center sticky top-0 z-50">
+        <div class="text-2xl font-bold text-blue-600 flex items-center gap-2">
+            <i class="fa-solid fa-compass"></i> ASAA Travel
+        </div>
+        <div class="space-x-4 text-gray-600 font-medium flex items-center">
+            <span id="userGreeting" class="text-sm font-semibold text-blue-600"></span>
+            <a href="/login" id="loginNavBtn" class="hover:text-blue-600 transition">Customer Login</a>
+            <a href="/register" id="regNavBtn" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-blue-700 transition">Register</a>
+            <a href="/admin-login" class="bg-slate-800 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-slate-900 transition flex items-center gap-1">
+                <i class="fa-solid fa-user-shield"></i> Admin Portal
+            </a>
+            <button id="logoutBtn" onclick="logoutUser()" class="hidden bg-red-500 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-red-600 transition">Logout</button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="relative bg-cover bg-center h-[400px] flex items-center justify-center text-white" style="background-image: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1488646953014-85cb44e25828?q=80&w=1200');">
+        <div class="text-center px-4">
+            <h1 class="text-4xl md:text-5xl font-extrabold mb-3">Apply For Your Travel Ticket</h1>
+            <p class="text-lg max-w-2xl mx-auto text-gray-200">Log in as a customer, submit your destination application, and track your ticket status.</p>
+        </div>
+    </div>
+
+    <!-- Mode Selection -->
+    <section class="max-w-6xl mx-auto py-12 px-4">
+        <h2 class="text-3xl font-bold text-center mb-2">Choose Travel Mode To Apply</h2>
+        <p class="text-gray-500 text-center mb-10">You must log in to submit a ticket application.</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="bg-white rounded-xl shadow-md overflow-hidden border p-6 text-center">
+                <i class="fa-solid fa-plane text-4xl text-blue-600 mb-4"></i>
+                <h3 class="text-xl font-bold mb-2">Air Travel</h3>
+                <p class="text-gray-500 text-sm mb-6">Apply for flight tickets with location-specific fare quotes.</p>
+                <button onclick="startApplication('air')" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-semibold transition">Apply for Air Ticket</button>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-md overflow-hidden border p-6 text-center">
+                <i class="fa-solid fa-bus text-4xl text-blue-600 mb-4"></i>
+                <h3 class="text-xl font-bold mb-2">Road Travel</h3>
+                <p class="text-gray-500 text-sm mb-6">Apply for interstate bus and luxury vehicle journeys.</p>
+                <button onclick="startApplication('road')" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-semibold transition">Apply for Road Ticket</button>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-md overflow-hidden border p-6 text-center">
+                <i class="fa-solid fa-ship text-4xl text-blue-600 mb-4"></i>
+                <h3 class="text-xl font-bold mb-2">Sea Travel</h3>
+                <p class="text-gray-500 text-sm mb-6">Apply for ferry and cruise voyage tickets.</p>
+                <button onclick="startApplication('sea')" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-semibold transition">Apply for Sea Ticket</button>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        const activeUser = JSON.parse(localStorage.getItem('asaa_customer_user'));
+        if(activeUser) {
+            document.getElementById('userGreeting').innerText = `Hello, ${activeUser.name}`;
+            document.getElementById('loginNavBtn').classList.add('hidden');
+            document.getElementById('regNavBtn').classList.add('hidden');
+            document.getElementById('logoutBtn').classList.remove('hidden');
+        }
+
+        function startApplication(type) {
+            if(!activeUser) {
+                alert("Please log in as a customer first to start applying for a ticket.");
+                window.location.href = "/login";
+            } else {
+                window.location.href = `/book?type=${type}`;
+            }
+        }
+
+        function logoutUser() {
+            localStorage.removeItem('asaa_customer_user');
+            window.location.reload();
+        }
+    </script>
+</body>
+</html>
