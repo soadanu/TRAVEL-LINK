@@ -1,26 +1,54 @@
-# ASAA Travel Ticket Application System
+# ASAA Travel — Rebuild Notes
 
-Features customer authentication, ticket applications, location-based price tags, and an Admin Dashboard with full track records of every user application.
+## What changed from the previous version
 
-## Credentials
+1. **Admin Portal button removed from the top nav.**
+   `index.html` no longer links to `/admin-login`. There is a single
+   "Login" link for everyone.
 
-- **Customer Login (`/login`):**
-  - Email: `traveler@example.com`
-  - Password: `user123`
-  - *(or register a new account on `/register`)*
+2. **One login form, two roles.**
+   `/login` now posts to `/api/auth/login`, which:
+   - checks the submitted credentials against the admin username/password
+     first,
+   - and if they don't match, falls back to checking the customer
+     accounts map.
 
-- **Admin Login (`/admin-login`):**
-  - Username: `admin`
-  - Password: `adminpassword123`
+   The response includes a `role` field (`"admin"` or `"customer"`).
+   The frontend reads that and redirects to `/admin` (setting the admin
+   token) or `/` (storing the customer session) accordingly.
 
-## Features Built
-1. **Customer Login & Register:** Customers log in before filling out their ticket application.
-2. **Location Fare Tags:** Dynamic destination fare lookup and admin custom price quoting.
-3. **Admin Track Record Dashboard:** Displays live application records of every customer applying for a ticket (Name, Email, Phone, Destination, Mode, Travel Date/Time, Status, Seat Number).
+   The old `admin_login.html` page and the separate
+   `/api/auth/admin-login` endpoint were removed since they're no longer
+   needed — everything goes through `/login`.
 
-## How to Run
+3. **Admin can now edit an existing price tag at any time.**
+   The pricing table on `/admin` has an **Edit** button on every row.
+   Clicking it pre-fills the form with that destination, mode, and
+   current price, and switches the submit button to "Update Location
+   Price Tag." Submitting posts to the same `/api/admin/pricing`
+   endpoint, which upserts by the `"Destination - Mode"` key — so the
+   same backend call both creates new price tags and overwrites
+   existing ones. A "Cancel" link clears the form back to add-mode.
+
+## Running it
 
 ```bash
-go run main.go
+go mod tidy
+go run .
 ```
-Visit `http://localhost:8080`.
+
+Then visit `http://localhost:8080`.
+
+- Customer demo login: `traveler@example.com` / `user123`
+- Admin login (same form): `admin` / `adminpassword123`
+
+## Still worth fixing (not part of this request, flagged for later)
+
+- Admin/customer "sessions" are just a flag in `localStorage` — there's
+  no real server-side session or token, so this isn't secure for
+  production.
+- All data (users, applications, pricing) is in-memory and resets on
+  restart.
+- SMTP and Flutterwave credentials in `main.go` / `book.html` are
+  placeholders — swap in real ones (ideally via environment variables,
+  not hardcoded) before going live.

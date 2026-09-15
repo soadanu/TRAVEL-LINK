@@ -16,11 +16,10 @@
         </div>
         <div class="space-x-4 text-gray-600 font-medium flex items-center">
             <span id="userGreeting" class="text-sm font-semibold text-blue-600"></span>
-            <a href="/login" id="loginNavBtn" class="hover:text-blue-600 transition">Customer Login</a>
+            <!-- Single "Login" entry point — this same form authenticates both
+                 customers and the admin. No separate Admin Portal link. -->
+            <a href="/login" id="loginNavBtn" class="hover:text-blue-600 transition">Login</a>
             <a href="/register" id="regNavBtn" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-blue-700 transition">Register</a>
-            <a href="/admin-login" class="bg-slate-800 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-slate-900 transition flex items-center gap-1">
-                <i class="fa-solid fa-user-shield"></i> Admin Portal
-            </a>
             <button id="logoutBtn" onclick="logoutUser()" class="hidden bg-red-500 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-red-600 transition">Logout</button>
         </div>
     </nav>
@@ -73,7 +72,7 @@
 
         function startApplication(type) {
             if(!activeUser) {
-                alert("Please log in as a customer first to start applying for a ticket.");
+                alert("Please log in first to start applying for a ticket.");
                 window.location.href = "/login";
             } else {
                 window.location.href = `/book?type=${type}`;

@@ -25,7 +25,7 @@
     </header>
 
     <div class="max-w-7xl mx-auto py-10 px-4 space-y-10">
-        
+
         <!-- Section 1: User Application Track Records -->
         <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200">
             <div class="flex justify-between items-center mb-4">
@@ -67,9 +67,9 @@
             <h2 class="text-xl font-bold mb-2 text-slate-800 flex items-center gap-2">
                 <i class="fa-solid fa-tags text-blue-600"></i> Manage Location Price Tags
             </h2>
-            <p class="text-sm text-gray-500 mb-6">Pre-configure fixed fare price tags for standard destinations.</p>
+            <p class="text-sm text-gray-500 mb-6">Pre-configure fixed fare price tags for standard destinations, or edit an existing one at any time.</p>
 
-            <form id="priceRuleForm" onsubmit="addPricingRule(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <form id="priceRuleForm" onsubmit="submitPricingRule(event)" class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-2">
                 <div>
                     <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Destination</label>
                     <input type="text" id="ruleDest" placeholder="e.g. Lagos, Port Harcourt" required class="w-full p-2.5 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
@@ -86,12 +86,17 @@
                     <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Price Tag (USD)</label>
                     <input type="number" step="0.01" id="rulePrice" placeholder="120.00" required class="w-full p-2.5 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
-                <div class="flex items-end">
-                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition">
+                <div class="flex items-end gap-2">
+                    <button type="submit" id="ruleSubmitBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition">
                         Set Location Price Tag
                     </button>
                 </div>
             </form>
+            <div id="editingBanner" class="hidden mb-6 text-xs font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded-lg flex items-center justify-between">
+                <span><i class="fa-solid fa-pen mr-1"></i> Editing an existing price tag — saving will overwrite it.</span>
+                <button onclick="cancelEditRule()" class="text-amber-700 underline">Cancel</button>
+            </div>
+            <div class="mb-6"></div>
 
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
@@ -99,6 +104,7 @@
                         <tr class="bg-slate-100 text-slate-700 text-xs uppercase font-semibold">
                             <th class="p-3">Destination & Mode</th>
                             <th class="p-3">Current Price Tag</th>
+                            <th class="p-3">Action</th>
                         </tr>
                     </thead>
                     <tbody id="pricingRulesList" class="divide-y text-sm">
@@ -114,12 +120,12 @@
         // Protect Admin Page
         if(localStorage.getItem('asaa_admin_token') !== 'logged_in') {
             alert("Admin authentication required.");
-            window.location.href = "/admin-login";
+            window.location.href = "/login";
         }
 
         function adminLogout() {
             localStorage.removeItem('asaa_admin_token');
-            window.location.href = "/admin-login";
+            window.location.href = "/login";
         }
 
         function loadAdminApplications() {
@@ -177,18 +183,50 @@
                             <tr class="hover:bg-gray-50">
                                 <td class="p-3 font-semibold text-gray-800">${key}</td>
                                 <td class="p-3 text-blue-600 font-bold">USD $${price.toFixed(2)}</td>
+                                <td class="p-3">
+                                    <button onclick='startEditRule(${JSON.stringify(key)}, ${price})' class="bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs px-2.5 py-1 rounded font-semibold transition">
+                                        <i class="fa-solid fa-pen"></i> Edit
+                                    </button>
+                                </td>
                             </tr>
                         `;
                     }
                 });
         }
 
-        function addPricingRule(e) {
+        let editingKey = null; // "Destination - Mode" of the rule currently being edited, or null when creating new
+
+        function startEditRule(key, price) {
+            // key format is "Destination - Mode" (see main.go's pricingRules map)
+            const parts = key.split(' - ');
+            const destination = parts.slice(0, -1).join(' - ');
+            const mode = parts[parts.length - 1];
+
+            editingKey = key;
+            document.getElementById('ruleDest').value = destination;
+            document.getElementById('ruleType').value = mode;
+            document.getElementById('rulePrice').value = price;
+            document.getElementById('ruleSubmitBtn').innerText = 'Update Location Price Tag';
+            document.getElementById('editingBanner').classList.remove('hidden');
+            document.getElementById('priceRuleForm').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function cancelEditRule() {
+            editingKey = null;
+            document.getElementById('priceRuleForm').reset();
+            document.getElementById('ruleSubmitBtn').innerText = 'Set Location Price Tag';
+            document.getElementById('editingBanner').classList.add('hidden');
+        }
+
+        function submitPricingRule(e) {
             e.preventDefault();
             const dest = document.getElementById('ruleDest').value;
             const type = document.getElementById('ruleType').value;
             const price = parseFloat(document.getElementById('rulePrice').value);
 
+            // Posting the same destination+mode again overwrites the existing
+            // price tag (upsert), so this same call handles both "add new"
+            // and "edit existing" — startEditRule() just pre-fills the form.
             fetch('/api/admin/pricing', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -196,8 +234,8 @@
             })
             .then(res => res.json())
             .then(data => {
-                alert("Location price tag set successfully!");
-                document.getElementById('priceRuleForm').reset();
+                alert(editingKey ? "Price tag updated successfully!" : "Location price tag set successfully!");
+                cancelEditRule();
                 loadPricingRules();
             });
         }

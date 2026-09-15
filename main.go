@@ -80,6 +80,7 @@ func main() {
 		c.HTML(http.StatusOK, "index.html", nil)
 	})
 
+	// Single login page — handles BOTH customer and admin sign-in.
 	r.GET("/login", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "login.html", nil)
 	})
@@ -98,20 +99,14 @@ func main() {
 		})
 	})
 
-	r.GET("/admin-login", func(c *gin.Context) {
-		c.HTML(http.StatusOK, "admin_login.html", nil)
-	})
-
 	r.GET("/admin", func(c *gin.Context) {
 		c.HTML(http.StatusOK, "admin.html", nil)
 	})
 
-	// User Auth APIs
+	// Auth APIs
 	r.POST("/api/auth/register", handleUserRegister)
-	r.POST("/api/auth/login", handleUserLogin)
-
-	// Admin Auth API
-	r.POST("/api/auth/admin-login", handleAdminLogin)
+	// Unified login: checks admin credentials first, then falls back to customer accounts.
+	r.POST("/api/auth/login", handleLogin)
 
 	// Application & Price APIs
 	r.POST("/api/submit-application", handleSubmitApplication)
@@ -122,7 +117,7 @@ func main() {
 	r.GET("/api/admin/applications", getAdminApplications)
 	r.POST("/api/admin/quote-price", quoteApplicationPrice)
 	r.GET("/api/admin/pricing", getPricingRules)
-	r.POST("/api/admin/pricing", updatePricingRule)
+	r.POST("/api/admin/pricing", updatePricingRule) // also used to EDIT an existing price tag (upsert by key)
 
 	fmt.Println("ASAA Travel Server running on http://localhost:8080")
 	fmt.Println("Default Admin Credentials -> Username: admin | Password: adminpassword123")
@@ -150,8 +145,10 @@ func handleUserRegister(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "success", "message": "Registration successful. Please log in."})
 }
 
-// User Login Handler
-func handleUserLogin(c *gin.Context) {
+// Unified Login Handler — one endpoint, one form, two possible roles.
+// Tries the admin credentials first (identifier = "admin" username), then
+// falls back to looking the identifier up as a customer email.
+func handleLogin(c *gin.Context) {
 	var payload struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
@@ -161,42 +158,35 @@ func handleUserLogin(c *gin.Context) {
 		return
 	}
 
+	// 1. Admin check
+	if payload.Email == adminUsername && payload.Password == adminPassword {
+		c.JSON(http.StatusOK, gin.H{
+			"status":  "success",
+			"role":    "admin",
+			"message": "Admin authenticated",
+		})
+		return
+	}
+
+	// 2. Customer check
 	usersMutex.Lock()
 	user, exists := users[payload.Email]
 	usersMutex.Unlock()
 
 	if !exists || user.Password != payload.Password {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email or password"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid email/username or password"})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"status":  "success",
-		"message": "Login successful",
+		"status": "success",
+		"role":   "customer",
 		"user": gin.H{
 			"name":  user.Name,
 			"email": user.Email,
 			"phone": user.Phone,
 		},
 	})
-}
-
-// Admin Login Handler
-func handleAdminLogin(c *gin.Context) {
-	var payload struct {
-		Username string `json:"username"`
-		Password string `json:"password"`
-	}
-	if err := c.ShouldBindJSON(&payload); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid admin login credentials"})
-		return
-	}
-
-	if payload.Username == adminUsername && payload.Password == adminPassword {
-		c.JSON(http.StatusOK, gin.H{"status": "success", "message": "Admin authenticated"})
-	} else {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid admin username or password"})
-	}
 }
 
 // Submit Application Handler
@@ -333,7 +323,10 @@ func getPricingRules(c *gin.Context) {
 	c.JSON(http.StatusOK, pricingRules)
 }
 
-// Update Pricing Rule Handler
+// Update Pricing Rule Handler.
+// Keyed by "Destination - Mode", so posting the SAME destination+mode again
+// simply overwrites the existing price — this is how the admin dashboard
+// both creates NEW price tags and EDITS existing ones.
 func updatePricingRule(c *gin.Context) {
 	var rule PricingRule
 	if err := c.ShouldBindJSON(&rule); err != nil {

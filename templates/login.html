@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Customer Login - ASAA Travel</title>
+    <title>Login - ASAA Travel</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -12,14 +12,16 @@
     <div class="max-w-md w-full bg-white p-8 rounded-xl shadow-lg border border-gray-200">
         <div class="text-center mb-6">
             <i class="fa-solid fa-user-lock text-4xl text-blue-600 mb-2"></i>
-            <h2 class="text-2xl font-bold text-gray-800">Customer Login</h2>
-            <p class="text-gray-500 text-sm">Log in to start applying for travel tickets</p>
+            <h2 class="text-2xl font-bold text-gray-800">Login</h2>
+            <p class="text-gray-500 text-sm">Log in to apply for travel tickets</p>
         </div>
 
+        <!-- Same form for everyone. The backend checks admin credentials first,
+             then customer accounts, and tells us which one matched. -->
         <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700">Email Address</label>
-                <input type="email" id="loginEmail" required placeholder="traveler@example.com" class="mt-1 w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
+                <input type="text" id="loginEmail" required placeholder="traveler@example.com" class="mt-1 w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 outline-none">
             </div>
 
             <div>
@@ -28,7 +30,7 @@
             </div>
 
             <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition duration-200">
-                Log In & Apply
+                Log In
             </button>
         </form>
 
@@ -36,7 +38,7 @@
             Don't have an account? <a href="/register" class="text-blue-600 font-semibold hover:underline">Register here</a>
         </div>
         <div class="mt-2 text-center text-xs text-gray-400">
-            Demo Login: traveler@example.com / user123
+            Demo customer login: traveler@example.com / user123
         </div>
     </div>
 
@@ -54,9 +56,15 @@
             .then(res => res.json())
             .then(data => {
                 if (data.status === 'success') {
-                    localStorage.setItem('asaa_customer_user', JSON.stringify(data.user));
-                    alert("Login successful! Redirecting to ticket application...");
-                    window.location.href = "/";
+                    if (data.role === 'admin') {
+                        localStorage.setItem('asaa_admin_token', 'logged_in');
+                        alert("Admin authentication successful!");
+                        window.location.href = "/admin";
+                    } else {
+                        localStorage.setItem('asaa_customer_user', JSON.stringify(data.user));
+                        alert("Login successful! Redirecting to ticket application...");
+                        window.location.href = "/";
+                    }
                 } else {
                     alert("Error: " + data.error);
                 }
