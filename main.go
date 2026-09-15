@@ -270,7 +270,7 @@ func handleGetPrice(c *gin.Context) {
 	}
 }
 
-// Confirm Booking & Issue Ticket
+// Confirm Booking & Issue Ticketkjhvgcghjjgnjopi
 func handleBookingConfirmation(c *gin.Context) {
 	var payload struct {
 		ApplicationID int     `json:"application_id"`
