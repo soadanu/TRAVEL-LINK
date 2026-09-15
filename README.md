@@ -42,7 +42,14 @@
    more realistic Naira fares — update those to your real prices
    whenever you're ready.
 
-5. **Secrets moved to environment variables.**
+5. **New "My Tickets" page for customers.**
+   Logged-in customers now see a "My Tickets" link in the nav (`/my-tickets`)
+   showing every application they've submitted — destination, date,
+   status, price, and seat number once assigned — newest first. Backed
+   by a new `GET /api/my-applications?email=...` endpoint that filters
+   the in-memory applications list by the logged-in customer's email.
+
+6. **Secrets moved to environment variables.**
    `main.go` now reads the admin credentials, SMTP settings, and the
    Flutterwave public key from env vars (with the old values kept as
    local-dev fallbacks so `go run .` still works untouched). It also

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Tickets - ASAA Travel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans min-h-screen">
+
+    <!-- Navigation -->
+    <nav class="bg-white shadow-md py-4 px-8 flex justify-between items-center sticky top-0 z-50">
+        <a href="/" class="text-2xl font-bold text-blue-600 flex items-center gap-2">
+            <i class="fa-solid fa-compass"></i> ASAA Travel
+        </a>
+        <div class="space-x-4 text-gray-600 font-medium flex items-center">
+            <span id="userGreeting" class="text-sm font-semibold text-blue-600"></span>
+            <a href="/" class="hover:text-blue-600 transition">Book Another Ticket</a>
+            <button onclick="logoutUser()" class="bg-red-500 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-red-600 transition">Logout</button>
+        </div>
+    </nav>
+
+    <div class="max-w-5xl mx-auto py-10 px-4">
+        <h1 class="text-2xl font-bold text-gray-800 mb-1 flex items-center gap-2">
+            <i class="fa-solid fa-ticket text-blue-600"></i> My Tickets
+        </h1>
+        <p class="text-sm text-gray-500 mb-6">Every ticket application you've submitted, and its current status.</p>
+
+        <div id="emptyState" class="hidden bg-white p-10 rounded-xl shadow-md border text-center text-gray-400">
+            <i class="fa-solid fa-suitcase-rolling text-4xl mb-3"></i>
+            <p>You haven't applied for any tickets yet.</p>
+            <a href="/" class="inline-block mt-4 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition">Apply For A Ticket</a>
+        </div>
+
+        <div id="ticketsList" class="space-y-4"></div>
+    </div>
+
+    <script>
+        const loggedUser = JSON.parse(localStorage.getItem('asaa_customer_user'));
+        if(!loggedUser) {
+            alert("Customer session expired. Please log in first.");
+            window.location.href = "/login";
+        } else {
+            document.getElementById('userGreeting').innerText = `Hello, ${loggedUser.name}`;
+        }
+
+        function logoutUser() {
+            localStorage.removeItem('asaa_customer_user');
+            window.location.href = "/";
+        }
+
+        function statusStyle(status) {
+            if (status.includes('Paid')) return 'bg-green-100 text-green-800';
+            if (status.includes('Quoted')) return 'bg-blue-100 text-blue-800';
+            return 'bg-yellow-100 text-yellow-800';
+        }
+
+        function transportIcon(type) {
+            const t = (type || '').toLowerCase();
+            if (t === 'air') return 'fa-plane';
+            if (t === 'sea') return 'fa-ship';
+            return 'fa-bus';
+        }
+
+        function loadMyTickets() {
+            fetch(`/api/my-applications?email=${encodeURIComponent(loggedUser.email)}`)
+                .then(res => res.json())
+                .then(apps => {
+                    const list = document.getElementById('ticketsList');
+                    list.innerHTML = '';
+
+                    if (!apps || apps.length === 0) {
+                        document.getElementById('emptyState').classList.remove('hidden');
+                        return;
+                    }
+                    document.getElementById('emptyState').classList.add('hidden');
+
+                    // Most recent first
+                    apps.slice().reverse().forEach(app => {
+                        list.innerHTML += `
+                            <div class="bg-white p-5 rounded-xl shadow-md border border-gray-200 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-12 h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
+                                        <i class="fa-solid ${transportIcon(app.transport_type)}"></i>
+                                    </div>
+                                    <div>
+                                        <div class="font-bold text-gray-900">${app.destination} <span class="text-xs uppercase font-semibold text-gray-400">(${app.transport_type})</span></div>
+                                        <div class="text-xs text-gray-500">${app.date} &bull; ${app.time}</div>
+                                        <div class="text-xs text-gray-400 mt-0.5">App #${app.id} &bull; Applied ${app.applied_at}</div>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-4 md:text-right">
+                                    <div>
+                                        <div class="text-lg font-bold text-blue-700">${app.quoted_price > 0 ? '₦' + app.quoted_price.toLocaleString() : 'Awaiting Fare'}</div>
+                                        ${app.seat_number ? `<div class="text-xs font-mono font-bold text-emerald-600">${app.seat_number}</div>` : ''}
+                                    </div>
+                                    <span class="px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap ${statusStyle(app.status)}">${app.status}</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                });
+        }
+
+        loadMyTickets();
+    </script>
+</body>
+</html>

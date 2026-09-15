@@ -126,6 +126,10 @@ func main() {
 		c.HTML(http.StatusOK, "admin.html", nil)
 	})
 
+	r.GET("/my-tickets", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "my_tickets.html", nil)
+	})
+
 	// Auth APIs
 	r.POST("/api/auth/register", handleUserRegister)
 	// Unified login: checks admin credentials first, then falls back to customer accounts.
@@ -135,6 +139,7 @@ func main() {
 	r.POST("/api/submit-application", handleSubmitApplication)
 	r.GET("/api/get-price", handleGetPrice)
 	r.POST("/api/confirm-booking", handleBookingConfirmation)
+	r.GET("/api/my-applications", getMyApplications)
 
 	// Admin Dashboard Data APIs
 	r.GET("/api/admin/applications", getAdminApplications)
@@ -270,7 +275,7 @@ func handleGetPrice(c *gin.Context) {
 	}
 }
 
-// Confirm Booking & Issue Ticketkjhvgcghjjgnjopi
+// Confirm Booking & Issue Ticket
 func handleBookingConfirmation(c *gin.Context) {
 	var payload struct {
 		ApplicationID int     `json:"application_id"`
@@ -314,6 +319,28 @@ func getAdminApplications(c *gin.Context) {
 	applicationsMutex.Lock()
 	defer applicationsMutex.Unlock()
 	c.JSON(http.StatusOK, applications)
+}
+
+// Get a single customer's own applications (their ticket history).
+// Scoped by email — the frontend sends the email of whoever is stored
+// in the browser's customer session.
+func getMyApplications(c *gin.Context) {
+	email := c.Query("email")
+	if email == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing email"})
+		return
+	}
+
+	applicationsMutex.Lock()
+	defer applicationsMutex.Unlock()
+
+	myApps := []TicketApplication{}
+	for _, app := range applications {
+		if app.UserEmail == email {
+			myApps = append(myApps, app)
+		}
+	}
+	c.JSON(http.StatusOK, myApps)
 }
 
 // Admin Quote Price Handler

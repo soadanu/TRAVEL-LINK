@@ -16,6 +16,7 @@
         </div>
         <div class="space-x-4 text-gray-600 font-medium flex items-center">
             <span id="userGreeting" class="text-sm font-semibold text-blue-600"></span>
+            <a href="/my-tickets" id="myTicketsBtn" class="hidden hover:text-blue-600 transition">My Tickets</a>
             <!-- Single "Login" entry point — this same form authenticates both
                  customers and the admin. No separate Admin Portal link. -->
             <a href="/login" id="loginNavBtn" class="hover:text-blue-600 transition">Login</a>
@@ -65,6 +66,7 @@
         const activeUser = JSON.parse(localStorage.getItem('asaa_customer_user'));
         if(activeUser) {
             document.getElementById('userGreeting').innerText = `Hello, ${activeUser.name}`;
+            document.getElementById('myTicketsBtn').classList.remove('hidden');
             document.getElementById('loginNavBtn').classList.add('hidden');
             document.getElementById('regNavBtn').classList.add('hidden');
             document.getElementById('logoutBtn').classList.remove('hidden');
