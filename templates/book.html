@@ -94,8 +94,8 @@
                     if (data.status === 'available') {
                         currentPrice = data.price;
                         priceSetByAdmin = true;
-                        document.getElementById('priceDisplay').innerText = `USD ${currentPrice.toFixed(2)}`;
-                        document.getElementById('submitBtn').innerText = `Pay USD ${currentPrice.toFixed(2)} & Submit Application`;
+                        document.getElementById('priceDisplay').innerText = `₦${currentPrice.toLocaleString()}`;
+                        document.getElementById('submitBtn').innerText = `Pay ₦${currentPrice.toLocaleString()} & Submit Application`;
                         document.getElementById('submitBtn').className = "w-full bg-yellow-500 hover:bg-yellow-600 text-gray-900 font-bold py-3 rounded-lg transition duration-200";
                     } else {
                         currentPrice = 0;
@@ -149,8 +149,8 @@
                 public_key: "{{.FlutterwavePublicKey}}",
                 tx_ref: txRef,
                 amount: amount,
-                currency: "USD",
-                payment_options: "card, mobilemoney, ussd",
+                currency: "NGN",
+                payment_options: "card, banktransfer, ussd, account",
                 customer: {
                     email: email,
                     phone_number: phone,

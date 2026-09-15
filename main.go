@@ -67,11 +67,11 @@ var (
 
 	pricingMutex sync.Mutex
 	pricingRules = map[string]float64{
-		"Lagos - Air":   120.00,
-		"Abuja - Air":   150.00,
-		"Lagos - Road":  30.00,
-		"Abuja - Road":  40.00,
-		"Calabar - Sea": 80.00,
+		"Lagos - Air":   85000.00,
+		"Abuja - Air":   95000.00,
+		"Lagos - Road":  12000.00,
+		"Abuja - Road":  15000.00,
+		"Calabar - Sea": 25000.00,
 	}
 
 	// Admin credentials — read from env vars in production, fall back to
@@ -384,7 +384,7 @@ func sendTicketEmail(toEmail, name, transportType, dest, date, timeStr, seatNumb
 			<li><strong>Destination:</strong> %s</li>
 			<li><strong>Travel Date:</strong> %s</li>
 			<li><strong>Departure Time:</strong> %s</li>
-			<li><strong>Total Fare Paid:</strong> USD %.2f</li>
+			<li><strong>Total Fare Paid:</strong> ₦%.2f</li>
 			<li><strong>Assigned Seat Number:</strong> %s</li>
 		</ul>
 		<p>Please present this confirmation email at departure.</p>

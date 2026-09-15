@@ -83,7 +83,7 @@
                     </select>
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Price Tag (USD)</label>
+                    <label class="block text-xs font-semibold text-gray-600 uppercase mb-1">Price Tag (NGN)</label>
                     <input type="number" step="0.01" id="rulePrice" placeholder="120.00" required class="w-full p-2.5 border rounded-lg outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div class="flex items-end gap-2">
@@ -160,7 +160,7 @@
                                 </td>
                                 <td class="p-3">
                                     <div class="flex items-center gap-2">
-                                        <input type="number" id="quote_${app.id}" placeholder="Quote $" class="w-20 p-1 border rounded text-xs outline-none">
+                                        <input type="number" id="quote_${app.id}" placeholder="Quote ₦" class="w-20 p-1 border rounded text-xs outline-none">
                                         <button onclick="quotePrice(${app.id})" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1 rounded font-semibold transition">
                                             Quote Fare
                                         </button>
@@ -182,7 +182,7 @@
                         tbody.innerHTML += `
                             <tr class="hover:bg-gray-50">
                                 <td class="p-3 font-semibold text-gray-800">${key}</td>
-                                <td class="p-3 text-blue-600 font-bold">USD $${price.toFixed(2)}</td>
+                                <td class="p-3 text-blue-600 font-bold">₦${price.toLocaleString()}</td>
                                 <td class="p-3">
                                     <button onclick='startEditRule(${JSON.stringify(key)}, ${price})' class="bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs px-2.5 py-1 rounded font-semibold transition">
                                         <i class="fa-solid fa-pen"></i> Edit

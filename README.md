@@ -30,7 +30,19 @@
    same backend call both creates new price tags and overwrites
    existing ones. A "Cancel" link clears the form back to add-mode.
 
-4. **Secrets moved to environment variables.**
+4. **Checkout currency switched from USD to NGN.**
+   Flutterwave's Standard Checkout only offers card payments for USD —
+   bank transfer, USSD, and mobile money all require a local currency.
+   `book.html` now checks out in NGN with
+   `payment_options: "card, banktransfer, ussd, account"` (the right
+   set for Nigeria — `mobilemoney` was actually meant for
+   Ghana/Kenya/Uganda, not Nigeria, so it's been dropped). All price
+   labels ("USD $..." → "₦...") were updated to match, and the demo
+   pricing rules in `main.go` were bumped from token dollar amounts to
+   more realistic Naira fares — update those to your real prices
+   whenever you're ready.
+
+5. **Secrets moved to environment variables.**
    `main.go` now reads the admin credentials, SMTP settings, and the
    Flutterwave public key from env vars (with the old values kept as
    local-dev fallbacks so `go run .` still works untouched). It also
