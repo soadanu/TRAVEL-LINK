@@ -146,7 +146,7 @@
             const txRef = "ASAA-APP-" + appId + "-" + Date.now();
 
             FlutterwaveCheckout({
-                public_key: "FLWPUBK_TEST-YOUR_PUBLIC_KEY_HERE-X",
+                public_key: "{{.FlutterwavePublicKey}}",
                 tx_ref: txRef,
                 amount: amount,
                 currency: "USD",

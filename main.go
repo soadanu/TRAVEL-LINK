@@ -5,11 +5,21 @@ import (
 	"math/rand"
 	"net/http"
 	"net/smtp"
+	"os"
 	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
 )
+
+// envOrDefault reads an environment variable, falling back to a default
+// value for local development when it isn't set.
+func envOrDefault(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
+}
 
 type User struct {
 	Name     string `json:"name"`
@@ -64,9 +74,21 @@ var (
 		"Calabar - Sea": 80.00,
 	}
 
-	// Admin Credentials
-	adminUsername = "admin"
-	adminPassword = "adminpassword123"
+	// Admin credentials — read from env vars in production, fall back to
+	// the old hardcoded values for local `go run .`.
+	adminUsername = envOrDefault("ADMIN_USERNAME", "admin")
+	adminPassword = envOrDefault("ADMIN_PASSWORD", "adminpassword123")
+
+	// SMTP credentials for sending ticket confirmation emails.
+	smtpFrom     = envOrDefault("SMTP_EMAIL", "your-email@gmail.com")
+	smtpPassword = envOrDefault("SMTP_APP_PASSWORD", "your-app-password")
+	smtpHost     = envOrDefault("SMTP_HOST", "smtp.gmail.com")
+	smtpPort     = envOrDefault("SMTP_PORT", "587")
+
+	// Flutterwave PUBLIC key — this one is safe to expose to the browser
+	// (it's a publishable key by design), but keeping it in an env var
+	// means you don't have to touch code to swap test/live keys.
+	flutterwavePublicKey = envOrDefault("FLUTTERWAVE_PUBLIC_KEY", "FLWPUBK_TEST-YOUR_PUBLIC_KEY_HERE-X")
 )
 
 func main() {
@@ -95,7 +117,8 @@ func main() {
 			transportType = "road"
 		}
 		c.HTML(http.StatusOK, "book.html", gin.H{
-			"Type": transportType,
+			"Type":                 transportType,
+			"FlutterwavePublicKey": flutterwavePublicKey,
 		})
 	})
 
@@ -119,9 +142,12 @@ func main() {
 	r.GET("/api/admin/pricing", getPricingRules)
 	r.POST("/api/admin/pricing", updatePricingRule) // also used to EDIT an existing price tag (upsert by key)
 
-	fmt.Println("ASAA Travel Server running on http://localhost:8080")
-	fmt.Println("Default Admin Credentials -> Username: admin | Password: adminpassword123")
-	r.Run(":8080")
+	// Render (and most hosts) assign the port dynamically via $PORT —
+	// the app MUST listen on that, not a hardcoded port, or the deploy
+	// will fail health checks.
+	port := envOrDefault("PORT", "8080")
+	fmt.Printf("ASAA Travel Server running on http://localhost:%s\n", port)
+	r.Run(":" + port)
 }
 
 // User Register Handler
@@ -343,11 +369,6 @@ func updatePricingRule(c *gin.Context) {
 }
 
 func sendTicketEmail(toEmail, name, transportType, dest, date, timeStr, seatNumber string, amount float64) {
-	from := "your-email@gmail.com"
-	password := "your-app-password"
-	smtpHost := "smtp.gmail.com"
-	smtpPort := "587"
-
 	subject := "Subject: Your ASAA Travel Application & Ticket Confirmation\n"
 	mime := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
 
@@ -371,9 +392,11 @@ func sendTicketEmail(toEmail, name, transportType, dest, date, timeStr, seatNumb
 	`, name, name, transportType, dest, date, timeStr, amount, seatNumber)
 
 	msg := []byte(subject + mime + body)
-	auth := smtp.PlainAuth("", from, password, smtpHost)
+	auth := smtp.PlainAuth("", smtpFrom, smtpPassword, smtpHost)
 
-	_ = smtp.SendMail(smtpHost+":"+smtpPort, auth, from, []string{toEmail}, msg)
+	if err := smtp.SendMail(smtpHost+":"+smtpPort, auth, smtpFrom, []string{toEmail}, msg); err != nil {
+		fmt.Printf("failed to send ticket email to %s: %v\n", toEmail, err)
+	}
 }
 
 func capitalize(str string) string {

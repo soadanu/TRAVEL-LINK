@@ -30,7 +30,14 @@
    same backend call both creates new price tags and overwrites
    existing ones. A "Cancel" link clears the form back to add-mode.
 
-## Running it
+4. **Secrets moved to environment variables.**
+   `main.go` now reads the admin credentials, SMTP settings, and the
+   Flutterwave public key from env vars (with the old values kept as
+   local-dev fallbacks so `go run .` still works untouched). It also
+   binds to `$PORT` instead of a hardcoded `8080`, which Render (and
+   most hosts) require.
+
+## Running it locally
 
 ```bash
 go mod tidy
@@ -41,6 +48,30 @@ Then visit `http://localhost:8080`.
 
 - Customer demo login: `traveler@example.com` / `user123`
 - Admin login (same form): `admin` / `adminpassword123`
+
+## Environment variables (for Render / production)
+
+On Render: **Environment** tab → **Add variable** for each of these →
+**Save, rebuild, and deploy**. Locally, if you don't set them, the app
+falls back to the old demo values automatically.
+
+| Key | Purpose | Example |
+|---|---|---|
+| `ADMIN_USERNAME` | Admin login identifier | `admin` |
+| `ADMIN_PASSWORD` | Admin login password | a strong password, not the old default |
+| `SMTP_EMAIL` | "From" address for ticket emails | `noreply@yourdomain.com` |
+| `SMTP_APP_PASSWORD` | App password for that mailbox (not your normal password) | Gmail app password |
+| `SMTP_HOST` | SMTP server | `smtp.gmail.com` |
+| `SMTP_PORT` | SMTP port | `587` |
+| `FLUTTERWAVE_PUBLIC_KEY` | Your Flutterwave **publishable** key | `FLWPUBK-...` |
+
+Render also injects `PORT` automatically — you don't set that one
+yourself, the app just needs to read it, which it now does.
+
+⚠️ Only ever put your Flutterwave **secret** key server-side if you add
+real payment verification later — never in an env var that gets read
+by client-facing code, and never in a `FLWPUBK`-prefixed variable
+(that prefix is the publishable one, safe for the browser).
 
 ## Still worth fixing (not part of this request, flagged for later)
 
