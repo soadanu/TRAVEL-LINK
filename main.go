@@ -130,7 +130,7 @@ func main() {
 		c.HTML(http.StatusOK, "my_tickets.html", nil)
 	})
 
-	// Auth APIs
+	// Auth APIs....;;.....
 	r.POST("/api/auth/register", handleUserRegister)
 	// Unified login: checks admin credentials first, then falls back to customer accounts.
 	r.POST("/api/auth/login", handleLogin)
